@@ -24,6 +24,8 @@ const SERVICE_UUID = '4fafc201-1fb5-459e-8fcc-c5c9c331914b';
 
 const MESSAGE_UUID = '6d68efe5-04b6-4a85-abc4-c2670b7bf7fd';
 const BOX_UUID = 'f27b53ad-c63d-49a0-8c0f-9f297e6cc520';
+const MOVING_UUID = 'f629121c-d51c-4ca9-b796-38bd6f23708b';
+const DIRECTION_UUID = 'd59671ce-950f-417c-ac51-d1d1cc8a6df9';
 
 function StringToBool(input: String) {
   if (input == '1') {
@@ -50,6 +52,8 @@ export default function App() {
 
   const [message, setMessage] = useState('Nothing Yet');
   const [boxvalue, setBoxValue] = useState(false);
+  const [isMoving, setIsMoving] = useState(false);
+  const [direction, setDirection] = useState(false); // true for "Up," false for "Down"
 
   // Scans availbale BLT Devices and then call connectDevice
   async function scanDevices() {
@@ -117,6 +121,47 @@ export default function App() {
       console.log('Boxvalue changed to :', base64.decode(characteristic.value));
     });
   }
+
+  async function sendMoveCommands(value: boolean) {
+    BLTManager.writeCharacteristicWithResponseForDevice(
+      connectedDevice?.id,
+      SERVICE_UUID,
+      MOVING_UUID,
+      base64.encode(value.toString())
+    ).then(characteristic => {
+      console.log('Moving characteristic updated:', base64.decode(characteristic.value));
+    });
+  }
+  async function sendDirectionCommands(value: boolean) {
+    BLTManager.writeCharacteristicWithResponseForDevice(
+      connectedDevice?.id,
+      SERVICE_UUID,
+      DIRECTION_UUID,
+      base64.encode(value.toString())
+    ).then(characteristic => {
+      console.log('Direction characteristic updated:', base64.decode(characteristic.value));
+    });
+  }
+  
+  function handleMoveForwardPress() {
+    setIsMoving(true);
+    setDirection(true);
+    sendMoveCommands(true);
+    sendDirectionCommands(true);
+  }
+  
+  function handleMoveBackwardPress() {
+    setIsMoving(true);
+    setDirection(false);
+    sendMoveCommands(true);
+    sendDirectionCommands(false);
+  }
+  
+  function handleMoveRelease() {
+    setIsMoving(false);
+    sendMoveCommands(false);
+  }
+  
   //Connect the device and start monitoring characteristics
   async function connectDevice(device: Device) {
     console.log('connecting to Device:', device.name);
@@ -149,6 +194,20 @@ export default function App() {
           .readCharacteristicForService(SERVICE_UUID, BOX_UUID)
           .then(valenc => {
             setBoxValue(StringToBool(base64.decode(valenc?.value)));
+          });
+        
+        //Moving
+        device
+          .readCharacteristicForService(SERVICE_UUID, MOVING_UUID)
+          .then(valenc => {
+            setIsMoving(StringToBool(base64.decode(valenc?.value)));
+          });
+        
+        //Direction
+        device
+          .readCharacteristicForService(SERVICE_UUID, DIRECTION_UUID)
+          .then(valenc => {
+            setDirection(StringToBool(base64.decode(valenc?.value)));
           });
 
         //monitor values and tell what to do when receiving an update
@@ -183,6 +242,38 @@ export default function App() {
             }
           },
           'boxtransaction',
+        );
+
+        //Moving
+        device.monitorCharacteristicForService(
+          SERVICE_UUID,
+          MOVING_UUID,
+          (error, characteristic) => {
+            if (characteristic?.value != null) {
+              setIsMoving(StringToBool(base64.decode(characteristic?.value)));
+              console.log(
+                'Move update received: ',
+                base64.decode(characteristic?.value),
+              );
+            }
+          },
+          'movetransaction',
+        );
+
+        //Direction
+        device.monitorCharacteristicForService(
+          SERVICE_UUID,
+          DIRECTION_UUID,
+          (error, characteristic) => {
+            if (characteristic?.value != null) {
+              setDirection(StringToBool(base64.decode(characteristic?.value)));
+              console.log(
+                'Direction update received: ',
+                base64.decode(characteristic?.value),
+              );
+            }
+          },
+          'directiontransaction',
         );
 
         console.log('Connection established');
@@ -243,6 +334,45 @@ export default function App() {
             sendBoxValue(BoolToString(newValue));
           }}
         />
+      </View>
+      <View style={styles.rowView}>
+        <CheckBox
+          disabled={false}
+          value={isMoving}
+          onValueChange={newValue => {
+            // setBoxValue(newValue);
+            sendMoveCommands(BoolToString(newValue));
+          }}
+        />
+      </View>
+      <View style={styles.rowView}>
+        <CheckBox
+          disabled={false}
+          value={direction}
+          onValueChange={newValue => {
+            // setBoxValue(newValue);
+            sendDirectionCommands(BoolToString(newValue));
+          }}
+        />
+      </View>
+      {/* Forward and Backward buttons */}
+      <View style={styles.rowView}>
+        <TouchableOpacity style={styles.buttonContainer}>
+          <Button
+            title="Up"
+            onPressIn={handleMoveForwardPress}
+            onPressOut={handleMoveRelease}
+            disabled={!isConnected}
+          />
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.buttonContainer}>
+          <Button
+            title="Down"
+            onPressIn={handleMoveBackwardPress}
+            onPressOut={handleMoveRelease}
+            disabled={!isConnected}
+          />
+        </TouchableOpacity>
       </View>
     </View>
   );

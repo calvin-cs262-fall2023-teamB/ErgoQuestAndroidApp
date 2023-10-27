@@ -5,27 +5,39 @@ import {
   PermissionsAndroid,
   View,
   Text,
+  Pressable,
 } from 'react-native';
+
 
 import base64 from 'react-native-base64';
 
+
 import CheckBox from '@react-native-community/checkbox';
+
 
 import {BleManager, Device} from 'react-native-ble-plx';
 import {styles} from './Styles/styles';
 import {LogBox} from 'react-native';
 
+
 LogBox.ignoreLogs(['new NativeEventEmitter']); // Ignore log notification by message
 LogBox.ignoreAllLogs(); //Ignore all log notifications
 
+
 const BLTManager = new BleManager();
 
-const SERVICE_UUID = '4fafc201-1fb5-459e-8fcc-c5c9c331914b';
 
+
+
+//UUIDs
+const SERVICE_UUID = '4fafc201-1fb5-459e-8fcc-c5c9c331914b';
 const MESSAGE_UUID = '6d68efe5-04b6-4a85-abc4-c2670b7bf7fd';
 const BOX_UUID = 'f27b53ad-c63d-49a0-8c0f-9f297e6cc520';
 const MOVING_UUID = 'f629121c-d51c-4ca9-b796-38bd6f23708b';
 const DIRECTION_UUID = 'd59671ce-950f-417c-ac51-d1d1cc8a6df9';
+
+
+
 
 function StringToBool(input: String) {
   if (input == '1') {
@@ -35,6 +47,7 @@ function StringToBool(input: String) {
   }
 }
 
+
 function BoolToString(input: boolean) {
   if (input == true) {
     return '1';
@@ -43,17 +56,21 @@ function BoolToString(input: boolean) {
   }
 }
 
+
 export default function App() {
   //Is a device connected?
   const [isConnected, setIsConnected] = useState(false);
 
+
   //What device is connected?
   const [connectedDevice, setConnectedDevice] = useState<Device>();
+
 
   const [message, setMessage] = useState('Nothing Yet');
   const [boxvalue, setBoxValue] = useState(false);
   const [isMoving, setIsMoving] = useState(false);
   const [direction, setDirection] = useState(false); // true for "Up," false for "Down"
+
 
   // Scans availbale BLT Devices and then call connectDevice
   async function scanDevices() {
@@ -70,16 +87,19 @@ export default function App() {
       console.log('scanning');
       // display the Activityindicator
 
+
       BLTManager.startDeviceScan(null, null, (error, scannedDevice) => {
         if (error) {
           console.warn(error);
         }
+
 
         if (scannedDevice && scannedDevice.name == 'BLEExample') {
           BLTManager.stopDeviceScan();
           connectDevice(scannedDevice);
         }
       });
+
 
       // stop scanning devices after 5 seconds
       setTimeout(() => {
@@ -88,9 +108,11 @@ export default function App() {
     });
   }
 
+
   // handle the device disconnection (poorly)
   async function disconnectDevice() {
     console.log('Disconnecting start');
+
 
     if (connectedDevice != null) {
       const isDeviceConnected = await connectedDevice.isConnected();
@@ -98,10 +120,12 @@ export default function App() {
         BLTManager.cancelTransaction('messagetransaction');
         BLTManager.cancelTransaction('nightmodetransaction');
 
+
         BLTManager.cancelDeviceConnection(connectedDevice.id).then(() =>
           console.log('DC completed'),
         );
       }
+
 
       const connectionStatus = await connectedDevice.isConnected();
       if (!connectionStatus) {
@@ -110,61 +134,66 @@ export default function App() {
     }
   }
 
+
+ 
   //Function to send data to ESP32
-  async function sendBoxValue(value: boolean) {
+  async function sendBoxValue(value: string) {
     BLTManager.writeCharacteristicWithResponseForDevice(
-      connectedDevice?.id,
+      connectedDevice?.id!,
       SERVICE_UUID,
       BOX_UUID,
-      base64.encode(value.toString()),
+      base64.encode(value),
     ).then(characteristic => {
-      console.log('Boxvalue changed to :', base64.decode(characteristic.value));
+      console.log('Boxvalue changed to :', base64.decode(characteristic.value!));
     });
   }
-
-  async function sendMoveCommands(value: boolean) {
+  async function sendMoveCommands(value: string) {
     BLTManager.writeCharacteristicWithResponseForDevice(
-      connectedDevice?.id,
+      connectedDevice?.id!,
       SERVICE_UUID,
       MOVING_UUID,
-      base64.encode(value.toString())
+      base64.encode(value)
     ).then(characteristic => {
-      console.log('Moving characteristic updated:', base64.decode(characteristic.value));
+      console.log('Moving characteristic updated:', base64.decode(characteristic.value!));
     });
   }
-  async function sendDirectionCommands(value: boolean) {
+  async function sendDirectionCommands(value: string) {
     BLTManager.writeCharacteristicWithResponseForDevice(
-      connectedDevice?.id,
+      connectedDevice?.id!,
       SERVICE_UUID,
       DIRECTION_UUID,
-      base64.encode(value.toString())
+      base64.encode(value)
     ).then(characteristic => {
-      console.log('Direction characteristic updated:', base64.decode(characteristic.value));
+      console.log('Direction characteristic updated:', base64.decode(characteristic.value!));
     });
   }
-  
+ 
+
+
+  //Button Press Handlers
   function handleMoveForwardPress() {
     setIsMoving(true);
     setDirection(true);
-    sendMoveCommands(true);
-    sendDirectionCommands(true);
+    sendMoveCommands(BoolToString(isMoving));
+    sendDirectionCommands(BoolToString(direction));
   }
-  
   function handleMoveBackwardPress() {
     setIsMoving(true);
     setDirection(false);
-    sendMoveCommands(true);
-    sendDirectionCommands(false);
+    sendMoveCommands(BoolToString(isMoving));
+    sendDirectionCommands(BoolToString(direction));
   }
-  
   function handleMoveRelease() {
     setIsMoving(false);
-    sendMoveCommands(false);
+    sendMoveCommands(BoolToString(isMoving));
   }
-  
+ 
+
+
   //Connect the device and start monitoring characteristics
   async function connectDevice(device: Device) {
     console.log('connecting to Device:', device.name);
+
 
     device
       .connect()
@@ -180,37 +209,42 @@ export default function App() {
           setIsConnected(false);
         });
 
-        //Read inital values
 
+
+
+        //Read inital values
         //Message
         device
           .readCharacteristicForService(SERVICE_UUID, MESSAGE_UUID)
           .then(valenc => {
-            setMessage(base64.decode(valenc?.value));
+            setMessage(base64.decode(valenc?.value!));
           });
+
 
         //BoxValue
         device
           .readCharacteristicForService(SERVICE_UUID, BOX_UUID)
           .then(valenc => {
-            setBoxValue(StringToBool(base64.decode(valenc?.value)));
+            setBoxValue(StringToBool(base64.decode(valenc?.value!)));
           });
-        
+       
         //Moving
         device
           .readCharacteristicForService(SERVICE_UUID, MOVING_UUID)
           .then(valenc => {
-            setIsMoving(StringToBool(base64.decode(valenc?.value)));
+            setIsMoving(StringToBool(base64.decode(valenc?.value!)));
           });
-        
+       
         //Direction
         device
           .readCharacteristicForService(SERVICE_UUID, DIRECTION_UUID)
           .then(valenc => {
-            setDirection(StringToBool(base64.decode(valenc?.value)));
+            setDirection(StringToBool(base64.decode(valenc?.value!)));
           });
 
+
         //monitor values and tell what to do when receiving an update
+
 
         //Message
         device.monitorCharacteristicForService(
@@ -228,6 +262,7 @@ export default function App() {
           'messagetransaction',
         );
 
+
         //BoxValue
         device.monitorCharacteristicForService(
           SERVICE_UUID,
@@ -243,6 +278,7 @@ export default function App() {
           },
           'boxtransaction',
         );
+
 
         //Moving
         device.monitorCharacteristicForService(
@@ -260,6 +296,7 @@ export default function App() {
           'movetransaction',
         );
 
+
         //Direction
         device.monitorCharacteristicForService(
           SERVICE_UUID,
@@ -276,20 +313,25 @@ export default function App() {
           'directiontransaction',
         );
 
+
         console.log('Connection established');
       });
   }
 
+
   return (
     <View>
       <View style={{paddingBottom: 200}}></View>
+
 
       {/* Title */}
       <View style={styles.rowView}>
         <Text style={styles.titleText}>BLE Example</Text>
       </View>
 
+
       <View style={{paddingBottom: 20}}></View>
+
 
       {/* Connect Button */}
       <View style={styles.rowView}>
@@ -314,17 +356,24 @@ export default function App() {
         </TouchableOpacity>
       </View>
 
+
       <View style={{paddingBottom: 20}}></View>
 
+
       {/* Monitored Value */}
+
 
       <View style={styles.rowView}>
         <Text style={styles.baseText}>{message}</Text>
       </View>
 
+
       <View style={{paddingBottom: 20}}></View>
 
-      {/* Checkbox */}
+
+
+
+      {/* Checkboxes */}
       <View style={styles.rowView}>
         <CheckBox
           disabled={false}
@@ -355,24 +404,29 @@ export default function App() {
           }}
         />
       </View>
+
+
+
+
       {/* Forward and Backward buttons */}
       <View style={styles.rowView}>
-        <TouchableOpacity style={styles.buttonContainer}>
-          <Button
-            title="Up"
-            onPressIn={handleMoveForwardPress}
-            onPressOut={handleMoveRelease}
-            disabled={!isConnected}
-          />
+      <TouchableOpacity onPressIn={handleMoveForwardPress} onPressOut={handleMoveRelease}>
+            <Text>Up</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.buttonContainer}>
-          <Button
-            title="Down"
-            onPressIn={handleMoveBackwardPress}
-            onPressOut={handleMoveRelease}
-            disabled={!isConnected}
-          />
+        <TouchableOpacity onPressIn={handleMoveBackwardPress} onPressOut={handleMoveRelease}>
+            <Text>Down</Text>
         </TouchableOpacity>
+      </View>
+
+
+      {/* Status Text */}
+      <View style={styles.rowView}>
+        <Text>
+          Moving: {isMoving ? 'On' : 'Off'}
+        </Text>
+        <Text>
+          Direction: {direction ? 'Up' : 'Down'}
+        </Text>
       </View>
     </View>
   );

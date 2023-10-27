@@ -159,7 +159,7 @@ direction_characteristic = pService->createCharacteristic(
 
   box_characteristic->setValue("0");
   box_characteristic->setCallbacks(new CharacteristicsCallbacks());
-
+  
   moving_characteristic->setValue("0");
   moving_characteristic->setCallbacks(new CharacteristicsCallbacks());
 

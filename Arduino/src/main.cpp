@@ -11,24 +11,27 @@ BLECharacteristic *message_characteristic = NULL;
 BLECharacteristic *box_characteristic = NULL;
 BLECharacteristic *moving_characteristic = NULL;
 BLECharacteristic *direction_characteristic = NULL;
+BLECharacteristic *location_characteristic = NULL;
 
 String boxValue = "0";
 String movingValue = "0";
 String directionValue = "0";
+String locationValue = "0";
 
 #define SERVICE_UUID "4fafc201-1fb5-459e-8fcc-c5c9c331914b"
 #define MESSAGE_CHARACTERISTIC_UUID "6d68efe5-04b6-4a85-abc4-c2670b7bf7fd"
 #define BOX_CHARACTERISTIC_UUID "f27b53ad-c63d-49a0-8c0f-9f297e6cc520"
 #define MOVING_UUID "f629121c-d51c-4ca9-b796-38bd6f23708b"
 #define DIRECTION_UUID "d59671ce-950f-417c-ac51-d1d1cc8a6df9"
+#define LOCATION_UUID "a5390fc3-c11e-43b6-b3a3-cfa9dacda542"
 
 // Define LED pins
 const int redLEDPin = 32;   // Red LED is connected to GPIO 25
 const int blueLEDPin = 33;  // Blue LED is connected to GPIO 26
 
 // Actuator variables
-const int pwmExtendPin = 25;       // PWM pin for extending the actuator
-const int pwmRetractPin = 26;      // PWM pin for retracting the actuator
+const int ExtendPin = 25;       // PWM pin for extending the actuator
+const int RetractPin = 26;      // PWM pin for retracting the actuator
 //const int hallEffectPin1 = 34;      // Hall Effect sensor pin
 //const int hallEffectPin2 = 35;      // Hall Effect sensor pin
 const int pulsePerInch = 3500;     // Pulses per inch of actuator travel
@@ -39,10 +42,19 @@ unsigned long prevTimer = 0;  // Time stamp of the last pulse
 bool homeFlag = 0;           // Flag to know if the actuator is homed
 long steps = 0;              // Pulses from the Hall Effect sensor
 
+// Actuator parameters
+const float maxExtent = 170; // Maximum extent of the actuator in mm
+const float maxSpeed = 9.0;    // Maximum speed of the actuator in mm/s
+
+float currentPosition = 0.0; // Initialize current position
+float targetPosition = 0.0; // Initialize target position
+unsigned long previousMillis = 0;
+unsigned long moveInterval = 10; // Interval between position updates in milliseconds
+
 // Code used to move the actuator given direction and speed
 void driveActuator(int speed, bool direction) {
-  analogWrite(pwmExtendPin, direction ? speed : 0);
-  analogWrite(pwmRetractPin, direction ? 0 : speed);
+  analogWrite(ExtendPin, direction ? speed : 0);
+  analogWrite(RetractPin, direction ? 0 : speed);
 }
 
 class MyServerCallbacks : public BLEServerCallbacks
@@ -64,9 +76,11 @@ class CharacteristicsCallbacks : public BLECharacteristicCallbacks
   {
     Serial.print("Value Written: ");
     Serial.println(pCharacteristic->getValue().c_str());
+    Serial.println(targetPosition);
 
     if (pCharacteristic == box_characteristic)
     {
+      Serial.println("handling box characteristic");
       boxValue = pCharacteristic->getValue().c_str();
       box_characteristic->setValue(const_cast<char *>(boxValue.c_str()));
       box_characteristic->notify();
@@ -85,6 +99,7 @@ class CharacteristicsCallbacks : public BLECharacteristicCallbacks
     }
     // Handle the "moving" characteristic
     if (pCharacteristic == moving_characteristic) {
+      Serial.println("handling moving characteristic");
       movingValue = pCharacteristic->getValue().c_str();
       moving_characteristic->setValue(const_cast<char *>(movingValue.c_str()));
       moving_characteristic->notify();
@@ -92,9 +107,18 @@ class CharacteristicsCallbacks : public BLECharacteristicCallbacks
 
     // Handle the "direction" characteristic
     if (pCharacteristic == direction_characteristic) {
+      Serial.println("handling direction characteristic");
       directionValue = pCharacteristic->getValue().c_str();
       direction_characteristic->setValue(const_cast<char *>(directionValue.c_str()));
       direction_characteristic->notify();
+    }
+
+    // Handle the "location" characteristic
+    if (pCharacteristic == location_characteristic) {
+      Serial.println("handling location characteristic");
+      locationValue = pCharacteristic->getValue().c_str();
+      location_characteristic->setValue(const_cast<char *>(locationValue.c_str()));
+      location_characteristic->notify();
     }
   }
 };
@@ -148,6 +172,14 @@ direction_characteristic = pService->createCharacteristic(
     BLECharacteristic::PROPERTY_INDICATE
 );
 
+location_characteristic = pService->createCharacteristic(
+    LOCATION_UUID,
+    BLECharacteristic::PROPERTY_READ |
+    BLECharacteristic::PROPERTY_WRITE |
+    BLECharacteristic::PROPERTY_NOTIFY |
+    BLECharacteristic::PROPERTY_INDICATE
+);
+
 
   pService->start();
   pServer->getAdvertising()->start();
@@ -166,6 +198,9 @@ direction_characteristic = pService->createCharacteristic(
   direction_characteristic->setValue("0");
   direction_characteristic->setCallbacks(new CharacteristicsCallbacks());
 
+  location_characteristic->setValue("0");
+  location_characteristic->setCallbacks(new CharacteristicsCallbacks());
+
 
   // Initialize LED pins as outputs
   pinMode(redLEDPin, OUTPUT);
@@ -181,8 +216,17 @@ direction_characteristic = pService->createCharacteristic(
 
 
   //Actuator setup
-  pinMode(pwmExtendPin, OUTPUT);
-  pinMode(pwmRetractPin, OUTPUT);
+  pinMode(ExtendPin, OUTPUT);
+  pinMode(RetractPin, OUTPUT);
+
+  // Ensure the actuator is zeroed at startup
+  digitalWrite(ExtendPin, LOW);
+  digitalWrite(RetractPin, HIGH);
+
+  // Wait for the actuator to fully retract and zeroed
+  delay((maxExtent / maxSpeed) * 1000);
+
+  Serial.println("Actuator is zeroed.");
 }
 
 
@@ -200,6 +244,7 @@ void loop()
   delay(1000);
   */
 
+ /*
   if (movingValue == "1") {
     // Start the actuator based on the "direction" characteristic
     if (directionValue == "1") {
@@ -212,5 +257,36 @@ void loop()
   } else {
     // Stop the actuator
     driveActuator(0, false);
+  }
+  */
+
+  targetPosition = (locationValue.toInt() / 100.0) * maxExtent;
+  unsigned long currentMillis = millis();
+
+  if (currentMillis - previousMillis >= moveInterval) {
+    previousMillis = currentMillis;
+
+    // Calculate the time needed to reach the target position
+    float distanceToMove = targetPosition - currentPosition;
+    float moveDistance = maxSpeed * moveInterval / 1000.0;
+
+    if (abs(distanceToMove) > moveDistance) {
+      if (distanceToMove > 0) {
+        // Extend the actuator
+        digitalWrite(ExtendPin, HIGH);
+        digitalWrite(RetractPin, LOW);
+        currentPosition += moveDistance;
+      } else {
+        // Retract the actuator
+        digitalWrite(ExtendPin, LOW);
+        digitalWrite(RetractPin, HIGH);
+        currentPosition -= moveDistance;
+      }
+    } else {
+      // Stop moving when the target position is reached
+      digitalWrite(ExtendPin, LOW);
+      digitalWrite(RetractPin, LOW);
+      currentPosition = targetPosition;
+    }
   }
 }

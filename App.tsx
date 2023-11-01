@@ -5,6 +5,7 @@ import {
   PermissionsAndroid,
   View,
   Text,
+  TextInput,
   Pressable,
 } from 'react-native';
 
@@ -35,7 +36,7 @@ const MESSAGE_UUID = '6d68efe5-04b6-4a85-abc4-c2670b7bf7fd';
 const BOX_UUID = 'f27b53ad-c63d-49a0-8c0f-9f297e6cc520';
 const MOVING_UUID = 'f629121c-d51c-4ca9-b796-38bd6f23708b';
 const DIRECTION_UUID = 'd59671ce-950f-417c-ac51-d1d1cc8a6df9';
-
+const LOCATION_UUID = 'a5390fc3-c11e-43b6-b3a3-cfa9dacda542';
 
 
 
@@ -70,6 +71,12 @@ export default function App() {
   const [boxvalue, setBoxValue] = useState(false);
   const [isMoving, setIsMoving] = useState(false);
   const [direction, setDirection] = useState(false); // true for "Up," false for "Down"
+  const [input, setInput] = useState(''); // State to store the input value
+
+  const setLocation = (text: string) => {
+    // Update the state with the input value
+    setInput(text);
+  };
 
 
   // Scans availbale BLT Devices and then call connectDevice
@@ -167,7 +174,14 @@ export default function App() {
       console.log('Direction characteristic updated:', base64.decode(characteristic.value!));
     });
   }
- 
+  async function sendLocation(value: string) {
+    BLTManager.writeCharacteristicWithoutResponseForDevice(
+      connectedDevice?.id!,
+      SERVICE_UUID,
+      LOCATION_UUID,
+      base64.encode(value)
+    )
+  }
 
 
   //Button Press Handlers
@@ -188,7 +202,17 @@ export default function App() {
     sendMoveCommands(BoolToString(isMoving));
   }
  
-
+  const handleInputSubmit = () => {
+    // Validate the input to be a number between 0 and 100
+    const inputValue = parseInt(input, 10);
+    if (!isNaN(inputValue) && inputValue >= 0 && inputValue <= 100) {
+      sendLocation(inputValue.toString()); // Convert the value to a string before sending
+      setInput(''); // Clear the input field after submission
+    } else {
+      // Handle invalid input
+      console.log('Invalid input. Please enter a number between 0 and 100.');
+    }
+  };
 
   //Connect the device and start monitoring characteristics
   async function connectDevice(device: Device) {
@@ -346,7 +370,7 @@ export default function App() {
             />
           ) : (
             <Button
-              title="Disonnect"
+              title="Disconnect"
               onPress={() => {
                 disconnectDevice();
               }}
@@ -428,6 +452,24 @@ export default function App() {
           Direction: {direction ? 'Up' : 'Down'}
         </Text>
       </View>
+
+    <View style={styles.container}>
+      <TextInput
+        style={styles.input}
+        keyboardType="numeric"
+        placeholder="Enter a number between 0 and 100"
+        value={input}
+        onChangeText={(text) => setLocation(text)}
+      />
+      
     </View>
+
+    <View>
+      <Button title="Submit" onPress={handleInputSubmit} />
+      <Text>
+        User Input Text: {input}
+      </Text>
+    </View>
+  </View>
   );
 }

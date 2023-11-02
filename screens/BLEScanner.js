@@ -11,8 +11,10 @@ import {
 import base64 from 'react-native-base64';
 import CheckBox from '@react-native-community/checkbox';
 import {BleManager, Device} from 'react-native-ble-plx';
-import {styles} from './Styles/styles';
+import { globalStyles } from '../styles/global';
 import {LogBox} from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import Icon from 'react-native-ionicons';
 
 LogBox.ignoreLogs(['new NativeEventEmitter']); // Ignore log notification by message
 LogBox.ignoreAllLogs(); //Ignore all log notifications
@@ -25,7 +27,7 @@ const MESSAGE_UUID = '6d68efe5-04b6-4a85-abc4-c2670b7bf7fd';
 const BOX_UUID = 'f27b53ad-c63d-49a0-8c0f-9f297e6cc520';
 const LOCATION_UUID = 'a5390fc3-c11e-43b6-b3a3-cfa9dacda542';
 
-function StringToBool(input: String) {
+function StringToBool(input) {
   if (input == '1') {
     return true;
   } else {
@@ -33,7 +35,7 @@ function StringToBool(input: String) {
   }
 }
 
-function BoolToString(input: boolean) {
+function BoolToString(input) {
   if (input == true) {
     return '1';
   } else {
@@ -41,18 +43,18 @@ function BoolToString(input: boolean) {
   }
 }
 
-export default function App() {
+export default function BLEScanner() {
   //Is a device connected?
   const [isConnected, setIsConnected] = useState(false);
 
   //What device is connected?
-  const [connectedDevice, setConnectedDevice] = useState<Device>();
+  const [connectedDevice, setConnectedDevice] = useState();
 
   const [message, setMessage] = useState('Nothing Yet');
   const [boxvalue, setBoxValue] = useState(false);
   const [input, setInput] = useState(''); // State to store the input value
 
-  const setLocation = (text: string) => {
+  const setLocation = (text) => {
     // Update the state with the input value
     setInput(text);
   };
@@ -113,19 +115,19 @@ export default function App() {
   }
 
   //Function to send data to ESP32
-  async function sendBoxValue(value: string) {
+  async function sendBoxValue(value) {
     BLTManager.writeCharacteristicWithResponseForDevice(
-      connectedDevice?.id!,
+      connectedDevice?.id,
       SERVICE_UUID,
       BOX_UUID,
       base64.encode(value),
     ).then(characteristic => {
-      console.log('Boxvalue changed to :', base64.decode(characteristic.value!));
+      console.log('Boxvalue changed to :', base64.decode(characteristic.value));
     });
   }
-  async function sendLocation(value: string) {
+  async function sendLocation(value) {
     BLTManager.writeCharacteristicWithoutResponseForDevice(
-      connectedDevice?.id!,
+      connectedDevice?.id,
       SERVICE_UUID,
       LOCATION_UUID,
       base64.encode(value)
@@ -145,7 +147,7 @@ export default function App() {
   };
 
   //Connect the device and start monitoring characteristics
-  async function connectDevice(device: Device) {
+  async function connectDevice(device) {
     console.log('connecting to Device:', device.name);
 
 
@@ -168,14 +170,14 @@ export default function App() {
         device
           .readCharacteristicForService(SERVICE_UUID, MESSAGE_UUID)
           .then(valenc => {
-            setMessage(base64.decode(valenc?.value!));
+            setMessage(base64.decode(valenc?.value));
           });
 
         //BoxValue
         device
           .readCharacteristicForService(SERVICE_UUID, BOX_UUID)
           .then(valenc => {
-            setBoxValue(StringToBool(base64.decode(valenc?.value!)));
+            setBoxValue(StringToBool(base64.decode(valenc?.value)));
           });
 
         //monitor values and tell what to do when receiving an update
@@ -213,21 +215,37 @@ export default function App() {
 
         console.log('Connection established');
       });
-  }
+    }
+  
+    const navigation = useNavigation(); // Get the navigation object
+  
+    const handleRemovePage = () => {
+      navigation.pop(); // This will remove the "Settings Page" from the stack.
+    };
 
   return (
     <View>
       <View style={{paddingBottom: 200}}></View>
 
+
       {/* Title */}
-      <View style={styles.rowView}>
-        <Text style={styles.titleText}>BLE Example</Text>
+      <View style={globalStyles.rowView}>
+        <Text style={globalStyles.titleText}>BLE Example</Text>
+      </View>
+
+      <View style={{ position: 'absolute', top: -10, right: 20 }}>
+        <TouchableOpacity onPress={handleRemovePage}>
+          <View style={{ backgroundColor: 'red', borderRadius: 20, padding: 10 }}>
+            <Icon name="ios-close" size={30} color="white" />
+          </View>
+        </TouchableOpacity>
       </View>
 
       <View style={{paddingBottom: 20}}></View>
 
+
       {/* Connect Button */}
-      <View style={styles.rowView}>
+      <View style={globalStyles.rowView}>
         <TouchableOpacity style={{width: 120}}>
           {!isConnected ? (
             <Button
@@ -249,17 +267,21 @@ export default function App() {
         </TouchableOpacity>
       </View>
 
+
       <View style={{paddingBottom: 20}}></View>
+
 
       {/* Monitored Value */}
-      <View style={styles.rowView}>
-        <Text style={styles.baseText}>{message}</Text>
+      <View style={globalStyles.rowView}>
+        <Text style={globalStyles.baseText}>{message}</Text>
       </View>
+
 
       <View style={{paddingBottom: 20}}></View>
 
+
       {/* Checkboxes */}
-      <View style={styles.rowView}>
+      <View style={globalStyles.rowView}>
         <CheckBox
           disabled={false}
           value={boxvalue}
@@ -270,15 +292,17 @@ export default function App() {
         />
       </View>
 
-    <View style={styles.container}>
+
+    <View style={globalStyles.container}>
       <TextInput
-        style={styles.input}
+        style={globalStyles.input}
         keyboardType="numeric"
         placeholder="Enter a number between 0 and 100"
         value={input}
         onChangeText={(text) => setLocation(text)}
       />
     </View>
+
 
     <View>
       <Button title="Submit" onPress={handleInputSubmit} />

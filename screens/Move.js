@@ -8,7 +8,7 @@ import Modal from 'react-native-modal';
 import { globalStyles } from '../styles/global';
 import { setLocation, handleInputSubmit } from '../components/BluetoothModule'; 
 
-export default function MoveScreen() {
+const MoveScreen = ({ changeLocation, callMove }) => {
     //DECLARATIONS
     const [name, setName] = useState('Default Name'); // Change 'Default Name' to any name you want as the initial value.
     const [percent, setPercent] = useState(6);
@@ -21,6 +21,8 @@ export default function MoveScreen() {
     const startIncreasing = () => startChange(increasePercent);
     const startDecreasing = () => startChange(decreasePercent);
     const [menuVisible, setMenuVisible] = useState(false);
+
+    
     
     useEffect(() => {
       return () => {
@@ -32,23 +34,25 @@ export default function MoveScreen() {
 
     const increasePercent = () => {
         setPercent(prev => (prev < 100 ? prev + 1 : prev));
-        setLocation(percent);
-        handleInputSubmit();
     };
 
     const decreasePercent = () => {
         setPercent(prev => (prev > 0 ? prev - 1 : prev));
-        setLocation(percent);
-        handleInputSubmit();
     };
 
     const startChange = (action) => {
+        //Bluetooth call
+        //childChangeLocation(percent);
+
         action();
         const id = setInterval(action, 100);
         setIntervalId(id);
     };
 
     const stopChange = () => {
+        //Bluetooth call
+        childChangeLocation(percent);
+        
         clearInterval(intervalId);
         setIntervalId(null);
     };
@@ -69,8 +73,8 @@ export default function MoveScreen() {
             setPercent(newPercent);
             setInputPercent('');
             setValueModalVisible(false);
-            setLocation(percent);
-            handleInputSubmit();
+            //Bluetooth call
+            childChangeLocation(percent);
         } else {
             Alert.alert('Error', 'Percentage should be between 0 and 100!');
         }
@@ -97,26 +101,32 @@ export default function MoveScreen() {
       } else if (option === 'value') {
           setValueModalVisible(true);
       }
-  };
+    };
 
-  const menuOptions = [
-    { 
-        label: 'Change Name', 
-        action: () => {
-            setMenuVisible(false); // Close the options modal
-            setNameModalVisible(true);
+    const menuOptions = [
+        { 
+            label: 'Change Name', 
+            action: () => {
+                setMenuVisible(false); // Close the options modal
+                setNameModalVisible(true);
+            }
+        },
+        { 
+            label: 'Change Value', 
+            action: () => {
+                setMenuVisible(false); // Close the options modal
+                setValueModalVisible(true);
+            }
         }
-    },
-    { 
-        label: 'Change Value', 
-        action: () => {
-            setMenuVisible(false); // Close the options modal
-            setValueModalVisible(true);
-        }
-    }
-];
+    ];
 
+    const childCallMove = () => {
+        callMove();
+    };
 
+    const childChangeLocation = (value) => {
+        changeLocation(value);
+    };
  
     return (
       <View style={styles.container}>
@@ -125,7 +135,7 @@ export default function MoveScreen() {
             <Text style={styles.percentText}>{percent}%</Text>
             <Text style={styles.nameText}>{name}</Text>
             <TouchableOpacity onPress={() => setMenuVisible(!menuVisible)}>
-              <Icon name="ellipsis-vertical" size={24} color="black" />
+              <Icon name="more" size={24} color="black" />
             </TouchableOpacity>
           </View>
           <View style={styles.buttons}>
@@ -274,3 +284,5 @@ addMoveButtonText: {
   },
 
 });
+
+export default MoveScreen;

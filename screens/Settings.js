@@ -5,17 +5,24 @@ import Modal from 'react-native-modal';
 import { globalStyles } from '../styles/global';
 import { useNavigation } from '@react-navigation/native';
 //import { BluetoothModule } from '../components/BluetoothModule';
-import { getIsConnected, disconnectDevice, scanDevices } from '../components/BluetoothModule'; 
+//import { getIsConnected, disconnectDevice, scanDevices } from '../components/BluetoothModule'; 
 
 //import BLEScanner from './BLEScanner';
 //import * as Location from 'expo-location';
 
-export default function SettingsModal(){
+const SettingsModal = ({ connect, disconnect, connected }) => {
 
   const navigation = useNavigation(); // Get the navigation object
   
     const handleRemovePage = () => {
       navigation.pop(); // This will remove the "Settings Page" from the stack.
+    };
+
+    const handleConnect = () => {
+      connect();
+    };
+    const handleDisconnect = () => {
+      disconnect();
     };
 
     return (
@@ -34,11 +41,11 @@ export default function SettingsModal(){
         </View>
         <View style={{ position: 'absolute', top: 200, left: 55 }}>
           <TouchableOpacity style={{width: 120}}>
-            {!getIsConnected ? (
+            {!connected ? (
               <Button
                 title="Connect"
                 onPress={() => {
-                  scanDevices();
+                  handleConnect();
                 }}
                 disabled={false}
               />
@@ -46,7 +53,7 @@ export default function SettingsModal(){
               <Button
                 title="Disconnect"
                 onPress={() => {
-                  disconnectDevice();
+                  handleDisconnect();
                 }}
                 disabled={false}
               />
@@ -61,3 +68,5 @@ export default function SettingsModal(){
       </SafeAreaView>
     );
   }
+
+  export default SettingsModal;

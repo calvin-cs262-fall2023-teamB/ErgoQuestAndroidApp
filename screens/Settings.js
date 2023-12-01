@@ -26,46 +26,54 @@ const SettingsModal = ({ connect, disconnect, connected }) => {
     };
 
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, marginTop: 20 }}>
-          <View style={{ position: 'absolute', top: -10, right: 20 }}>
-            <TouchableOpacity onPress={handleRemovePage}>
-              <View style={{ backgroundColor: 'red', borderRadius: 20, padding: 10 }}>
-                <Icon name="ios-close" size={30} color="white" />
-              </View>
-            </TouchableOpacity>
+      <SafeAreaView style={{ flex: 1, backgroundColor: 'white', alignItems: 'center' }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, marginTop: 20, width: '100%' }}>
+        <TouchableOpacity onPress={handleRemovePage} style={{ position: 'absolute', top: 20, right: 20 }}>
+          <View style={{ backgroundColor: 'red', borderRadius: 20, padding: 10 }}>
+            <Icon name="ios-close" size={30} color="white" />
           </View>
-          <View style={{ position: 'absolute', top: 0, left: 120 }}>
-            <Text style={{ fontSize: 24, fontWeight: 'bold' }}>Settings Page</Text>
-          </View>
+        </TouchableOpacity>
+        <View>
+          <Text style={{ fontSize: 24, fontWeight: 'bold' }}>Settings Page</Text>
         </View>
-        <View style={{ position: 'absolute', top: 200, left: 55 }}>
-          <TouchableOpacity style={{width: 120}}>
-            {!connected ? (
-              <Button
-                title="Connect"
-                onPress={() => {
-                  handleConnect();
-                }}
-                disabled={false}
-              />
-            ) : (
-              <Button
-                title="Disconnect"
-                onPress={() => {
-                  handleDisconnect();
-                }}
-                disabled={false}
-              />
-            )}
-          </TouchableOpacity>
-        </View>
-        <View style={{ position: 'absolute', top: 300, left: 150 }}>
-            <TouchableOpacity onPress={() => alert("Account Information")} style={{ backgroundColor: '#43B2D1', borderRadius: 20, padding: 10 }}>
-              <Text style={{ fontSize: 24, color: 'white', fontWeight: 'bold' }}>Account</Text>
-            </TouchableOpacity>
-            </View>
-      </SafeAreaView>
+      </View>
+
+      <View style={{ marginTop: 200 }}>
+        <TouchableOpacity
+          onPress={() => {
+            connected ? handleDisconnect() : handleConnect();
+          }}
+          style={{
+            backgroundColor: '#43B2D1',
+            borderRadius: 20,
+            paddingVertical: 10,
+            paddingHorizontal: 20,
+            alignItems: 'center',
+            flexDirection: 'row',
+          }}
+        >
+          <Text style={{ fontSize: 24, color: 'white', fontWeight: 'bold', marginRight: 8 }}>
+            {connected ? 'Disconnect' : 'Connect'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={{ marginTop: 20 }}>
+        <TouchableOpacity
+          onPress={() => alert('Account Information')}
+          style={{
+            backgroundColor: '#43B2D1',
+            borderRadius: 20,
+            paddingVertical: 10,
+            paddingHorizontal: 20,
+            alignItems: 'center',
+            flexDirection: 'row',
+          }}
+        >
+          <Text style={{ fontSize: 24, color: 'white', fontWeight: 'bold', marginRight: 8 }}>Account</Text>
+        </TouchableOpacity>
+      </View>
+    </SafeAreaView>
     );
   }
 

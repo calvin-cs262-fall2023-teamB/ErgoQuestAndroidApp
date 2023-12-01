@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, Image, TouchableOpacity, SafeAreaView, Dimensions, PermissionsAndroid } from 'react-native';
 import { NavigationContainer} from '@react-navigation/native';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
@@ -15,6 +15,7 @@ import BLEScanner from './screens/BLEScanner';
 import base64 from 'react-native-base64';
 import {BleManager, Device} from 'react-native-ble-plx';
 import {LogBox} from 'react-native';
+import './screens/global';
 
 //For Bluetooth -------------------------------------------
 LogBox.ignoreLogs(['new NativeEventEmitter']); // Ignore log notification by message
@@ -136,11 +137,19 @@ export default function App() {
   const [boxvalue, setBoxValue] = useState(false);
   const [input, setInput] = useState(''); // State to store the input value
 
+  useEffect(() => {
+    // Polling global.moves[currentMoveIndex].percent every 500 milliseconds
+    const intervalId = setInterval(() => {
+      const percent = global.moves[1].percent;
+      setLocation(percent);
+    }, 500);
+    // Cleanup the interval on component unmount
+    return () => clearInterval(intervalId);
+  });
+
   const setLocation = (text) => {
     // Update the state with the input value
     setInput(text);
-    handleInputSubmit();
-    handleInputSubmit();
     handleInputSubmit();
   };
 

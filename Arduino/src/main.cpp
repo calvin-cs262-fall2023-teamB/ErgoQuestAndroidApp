@@ -10,6 +10,8 @@ BLECharacteristic *location_characteristic = NULL;
 
 String boxValue = "0";
 String locationValue = "0";
+String location = "0";
+String id = "0";
 
 #define SERVICE_UUID "4fafc201-1fb5-459e-8fcc-c5c9c331914b"
 #define MESSAGE_CHARACTERISTIC_UUID "6d68efe5-04b6-4a85-abc4-c2670b7bf7fd"
@@ -20,28 +22,18 @@ String locationValue = "0";
 const int redLEDPin = 32;   // Red LED is connected to GPIO 25
 const int blueLEDPin = 33;  // Blue LED is connected to GPIO 26
 
-// Actuator variables (some will only be used if we figure out hall effect sensor)
-const int ExtendPin = 25;       // PWM pin for extending the actuator
-const int RetractPin = 26;      // PWM pin for retracting the actuator
-//const int hallEffectPin1 = 34;      // Hall Effect sensor pin
-//const int hallEffectPin2 = 35;      // Hall Effect sensor pin
-const int pulsePerInch = 3500;     // Pulses per inch of actuator travel
-long pos = 0;                       // Actuator position in pulses
-long prevPos = 0;                   // Previous position
-bool dir = 0;                       // Direction of actuator (0 = Retract, 1 = Extend)
-unsigned long prevTimer = 0;  // Time stamp of the last pulse
-bool homeFlag = 0;           // Flag to know if the actuator is homed
-long steps = 0;              // Pulses from the Hall Effect sensor
-
-// Actuator parameters
+// Actuator variables
+const int extendPins[] = {25, 14};
+const int retractPins[] = {26, 12};
+float targetPositions[] = {0.0, 0.0};
+float currentPositions[] = {0.0, 0.0};
+unsigned long previousMillis[] = {0, 0};
+bool moveActuators[] = {false, false};
+unsigned long startTimes[] = {0, 0};
+const int NUM_ACTUATORS = 2;
+const unsigned long moveInterval = 10; // Interval between position updates in milliseconds
 const float maxExtent = 170; // Maximum extent of the actuator in mm
 const float maxSpeed = 9.0;    // Maximum speed of the actuator in mm/s
-
-// Actuator position control
-float currentPosition = 0.0; // Initialize current position
-float targetPosition = 0.0; // Initialize target position
-unsigned long previousMillis = 0;
-unsigned long moveInterval = 10; // Interval between position updates in milliseconds
 
 class MyServerCallbacks : public BLEServerCallbacks
 {
@@ -62,11 +54,9 @@ class CharacteristicsCallbacks : public BLECharacteristicCallbacks
   {
     Serial.print("Value Written: ");
     Serial.println(pCharacteristic->getValue().c_str());
-    Serial.println(targetPosition);
 
     if (pCharacteristic == box_characteristic)
     {
-      Serial.println("handling box characteristic");
       boxValue = pCharacteristic->getValue().c_str();
       box_characteristic->setValue(const_cast<char *>(boxValue.c_str()));
       box_characteristic->notify();
@@ -84,23 +74,26 @@ class CharacteristicsCallbacks : public BLECharacteristicCallbacks
       }
     }
     // Handle the "location" characteristic
-    if (pCharacteristic == location_characteristic) {
-      Serial.println("handling location characteristic");
+    else if (pCharacteristic == location_characteristic) {
       locationValue = pCharacteristic->getValue().c_str();
-      location_characteristic->setValue(const_cast<char *>(locationValue.c_str()));
+      id = locationValue.substring(0,1);
+      location = locationValue.substring(2);
+      Serial.println("Moving actuator " + id + " to " + location + "%");
+      location_characteristic->setValue(const_cast<char *>(location.c_str()));
       location_characteristic->notify();
+      
+      int actuatorIndex = id.toInt();
+      targetPositions[actuatorIndex] = (location.toInt() / 100.0) * maxExtent;
+      moveActuators[actuatorIndex] = true;
+      startTimes[actuatorIndex] = millis();  // Record start time for the actuator
     }
   }
 };
 
-
 void setup()
 {
   Serial.begin(115200);
-  // Initialize the BLE Device
   BLEDevice::init("BLEExample");
-
-  // Create the BLE Server
   pServer = BLEDevice::createServer();
   pServer->setCallbacks(new MyServerCallbacks());
 
@@ -142,72 +135,62 @@ void setup()
   location_characteristic->setValue("0");
   location_characteristic->setCallbacks(new CharacteristicsCallbacks());
 
-  // Initialize LED pins as outputs
   pinMode(redLEDPin, OUTPUT);
   pinMode(blueLEDPin, OUTPUT);
-
-  // Initially turn off both LEDs
   digitalWrite(redLEDPin, HIGH);
   digitalWrite(blueLEDPin, LOW);
 
   Serial.println("Waiting for a client connection to notify...");
 
-  //Actuator setup
-  pinMode(ExtendPin, OUTPUT);
-  pinMode(RetractPin, OUTPUT);
+  for (int i = 0; i < NUM_ACTUATORS; ++i)
+  {
+    pinMode(extendPins[i], OUTPUT);
+    pinMode(retractPins[i], OUTPUT);
+    digitalWrite(extendPins[i], LOW);
+    digitalWrite(retractPins[i], HIGH);
+  }
 
-  // Ensure the actuator is zeroed at startup
-  digitalWrite(ExtendPin, LOW);
-  digitalWrite(RetractPin, HIGH);
-
-  // Wait for the actuator to fully retract and zeroed
   delay((maxExtent / maxSpeed) * 1000);
-
-  Serial.println("Actuator is zeroed.");
+  Serial.println("Actuators are zeroed.");
 }
 
+void moveActuator(int actuatorIndex) {
+  unsigned long currentMillis = millis();
+
+  // Calculate the time needed to reach the target position
+  float distanceToMove = targetPositions[actuatorIndex] - currentPositions[actuatorIndex];
+  float moveDistance = maxSpeed * moveInterval / 1000.0;
+
+  if (abs(distanceToMove) > moveDistance) {
+    if (distanceToMove > 0) {
+      // Extend the actuator
+      digitalWrite(extendPins[actuatorIndex], HIGH);
+      digitalWrite(retractPins[actuatorIndex], LOW);
+      currentPositions[actuatorIndex] += moveDistance;
+    } else {
+      // Retract the actuator
+      digitalWrite(extendPins[actuatorIndex], LOW);
+      digitalWrite(retractPins[actuatorIndex], HIGH);
+      currentPositions[actuatorIndex] -= moveDistance;
+    }
+  } else {
+    // Stop moving when the target position is reached
+    digitalWrite(extendPins[actuatorIndex], LOW);
+    digitalWrite(retractPins[actuatorIndex], LOW);
+    currentPositions[actuatorIndex] = targetPositions[actuatorIndex];
+    Serial.println("Actuator " + String(actuatorIndex) + " reached target position");
+    moveActuators[actuatorIndex] = false;  // Reset the flag
+  }
+}
 
 void loop()
 {
-  // Periodically notify the message_characteristic
-  /*
-  message_characteristic->setValue("Message one");
-  message_characteristic->notify();
-  delay(1000);
-
-
-  message_characteristic->setValue("Message Two");
-  message_characteristic->notify();
-  delay(1000);
-  */
-
-  targetPosition = (locationValue.toInt() / 100.0) * maxExtent;
-  unsigned long currentMillis = millis();
-
-  if (currentMillis - previousMillis >= moveInterval) {
-    previousMillis = currentMillis;
-
-    // Calculate the time needed to reach the target position
-    float distanceToMove = targetPosition - currentPosition;
-    float moveDistance = maxSpeed * moveInterval / 1000.0;
-
-    if (abs(distanceToMove) > moveDistance) {
-      if (distanceToMove > 0) {
-        // Extend the actuator
-        digitalWrite(ExtendPin, HIGH);
-        digitalWrite(RetractPin, LOW);
-        currentPosition += moveDistance;
-      } else {
-        // Retract the actuator
-        digitalWrite(ExtendPin, LOW);
-        digitalWrite(RetractPin, HIGH);
-        currentPosition -= moveDistance;
-      }
-    } else {
-      // Stop moving when the target position is reached
-      digitalWrite(ExtendPin, LOW);
-      digitalWrite(RetractPin, LOW);
-      currentPosition = targetPosition;
+  for (int i = 0; i < NUM_ACTUATORS; ++i)
+  {
+    if (moveActuators[i] && millis() - startTimes[i] >= moveInterval) {
+      moveActuator(i);
+      startTimes[i] = millis();  // Reset the start time after moving
     }
   }
 }
+

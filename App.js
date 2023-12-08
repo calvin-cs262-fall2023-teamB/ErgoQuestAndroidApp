@@ -136,12 +136,23 @@ export default function App() {
   const [message, setMessage] = useState('Nothing Yet');
   const [boxvalue, setBoxValue] = useState(false);
   const [input, setInput] = useState(''); // State to store the input value
+  const [id, setID] = useState(''); // State to store the ID value
 
   useEffect(() => {
+    let trade = 1;
     // Polling global.moves[currentMoveIndex].percent every 500 milliseconds
     const intervalId = setInterval(() => {
-      const percent = global.moves[1].percent;
-      setLocation(percent);
+      if(trade==1){
+        percent = global.moves[0].percent;
+        setID(0);
+        setLocation(percent);
+        trade = 0;
+      }else{
+        percent = global.moves[1].percent;
+        setID(1);
+        setLocation(percent);
+        trade = 1;
+      }
     }, 500);
     // Cleanup the interval on component unmount
     return () => clearInterval(intervalId);
@@ -239,8 +250,9 @@ export default function App() {
   const handleInputSubmit = () => {
     // Validate the input to be a number between 0 and 100
     const inputValue = parseInt(input, 10);
+    const IDValue = parseInt(id, 10);
     if (!isNaN(inputValue) && inputValue >= 0 && inputValue <= 100) {
-      sendLocation(inputValue.toString()); // Convert the value to a string before sending
+      sendLocation(IDValue.toString() + " " + inputValue.toString()); // Convert the value to a string before sending
       //setInput(''); // Clear the input field after submission
     } else {
       // Handle invalid input

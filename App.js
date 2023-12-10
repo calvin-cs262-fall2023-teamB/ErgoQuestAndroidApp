@@ -11,6 +11,8 @@ import PresetsScreen from './screens/Presets';
 import TimedScreen from './screens/Timed';
 import HelpModal from './screens/HelpModal';
 import SettingsModal from './screens/Settings';
+//import LoginScreen from './screens/LoginPage';
+//import CreateAccountScreen from './screens/createAccountScreen';
 import BLEScanner from './screens/BLEScanner';
 import base64 from 'react-native-base64';
 import {BleManager, Device} from 'react-native-ble-plx';
@@ -354,6 +356,7 @@ export default function App() {
             />
           )}
         </Stack.Screen>
+        
       </Stack.Navigator>
     </NavigationContainer>
   );

@@ -19,18 +19,18 @@ String id = "0";
 #define LOCATION_UUID "a5390fc3-c11e-43b6-b3a3-cfa9dacda542"
 
 // Define LED pins
-const int redLEDPin = 32;   // Red LED is connected to GPIO 25
-const int blueLEDPin = 33;  // Blue LED is connected to GPIO 26
+//const int redLEDPin = 32;   // Red LED is connected to GPIO 25
+//const int blueLEDPin = 33;  // Blue LED is connected to GPIO 26
 
 // Actuator variables
-const int extendPins[] = {25, 14};
-const int retractPins[] = {26, 12};
-float targetPositions[] = {0.0, 0.0};
-float currentPositions[] = {0.0, 0.0};
-unsigned long previousMillis[] = {0, 0};
-bool moveActuators[] = {false, false};
-unsigned long startTimes[] = {0, 0};
-const int NUM_ACTUATORS = 2;
+const int extendPins[] = {25, 14, 32};
+const int retractPins[] = {26, 12, 33};
+float targetPositions[] = {0.0, 0.0, 0.0};
+float currentPositions[] = {0.0, 0.0, 0.0};
+unsigned long previousMillis[] = {0, 0, 0};
+bool moveActuators[] = {false, false, false};
+unsigned long startTimes[] = {0, 0, 0};
+const int NUM_ACTUATORS = 3;
 const unsigned long moveInterval = 10; // Interval between position updates in milliseconds
 const float maxExtent = 170; // Maximum extent of the actuator in mm
 const float maxSpeed = 9.0;    // Maximum speed of the actuator in mm/s
@@ -62,6 +62,7 @@ class CharacteristicsCallbacks : public BLECharacteristicCallbacks
       box_characteristic->notify();
 
       // Check the value of the box_characteristic and control the LEDs accordingly
+      /*
       if (boxValue == "1")
       {
         digitalWrite(blueLEDPin, HIGH);  // Turn on the blue LED
@@ -72,6 +73,7 @@ class CharacteristicsCallbacks : public BLECharacteristicCallbacks
         digitalWrite(blueLEDPin, LOW);    // Turn off the blue LED
         digitalWrite(redLEDPin, HIGH);    // Turn on the red LED
       }
+      */
     }
     // Handle the "location" characteristic
     else if (pCharacteristic == location_characteristic) {
@@ -135,10 +137,10 @@ void setup()
   location_characteristic->setValue("0");
   location_characteristic->setCallbacks(new CharacteristicsCallbacks());
 
-  pinMode(redLEDPin, OUTPUT);
-  pinMode(blueLEDPin, OUTPUT);
-  digitalWrite(redLEDPin, HIGH);
-  digitalWrite(blueLEDPin, LOW);
+  //pinMode(redLEDPin, OUTPUT);
+  //pinMode(blueLEDPin, OUTPUT);
+  //digitalWrite(redLEDPin, HIGH);
+  //digitalWrite(blueLEDPin, LOW);
 
   Serial.println("Waiting for a client connection to notify...");
 

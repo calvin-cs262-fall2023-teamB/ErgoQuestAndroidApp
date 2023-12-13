@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, Image, TouchableOpacity, SafeAreaView, Dimensions, PermissionsAndroid } from 'react-native';
 import { NavigationContainer} from '@react-navigation/native';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
@@ -11,8 +11,8 @@ import PresetsScreen from './screens/Presets';
 import TimedScreen from './screens/Timed';
 import HelpModal from './screens/HelpModal';
 import SettingsModal from './screens/Settings';
-//import LoginScreen from './screens/LoginPage';
-//import CreateAccountScreen from './screens/createAccountScreen';
+import LoginScreen from './screens/LoginPage';
+import CreateAccountScreen from './screens/createAccountScreen';
 import BLEScanner from './screens/BLEScanner';
 import base64 from 'react-native-base64';
 import {BleManager, Device} from 'react-native-ble-plx';
@@ -139,23 +139,16 @@ export default function App() {
   const [boxvalue, setBoxValue] = useState(false);
   const [input, setInput] = useState(''); // State to store the input value
   const [id, setID] = useState(''); // State to store the ID value
+  const tradeRef = useRef(0);
 
   useEffect(() => {
-    let trade = 1;
-    // Polling global.moves[currentMoveIndex].percent every 500 milliseconds
     const intervalId = setInterval(() => {
-      if(trade==1){
-        percent = global.moves[0].percent;
-        setID(0);
-        setLocation(percent);
-        trade = 0;
-      }else{
-        percent = global.moves[1].percent;
-        setID(1);
-        setLocation(percent);
-        trade = 1;
-      }
-    }, 500);
+      setID(tradeRef.current);
+      setLocation(global.moves[tradeRef.current].percent);
+
+      tradeRef.current = (tradeRef.current + 1) % global.moves.length;
+    }, 250);
+
     // Cleanup the interval on component unmount
     return () => clearInterval(intervalId);
   });
@@ -356,7 +349,8 @@ export default function App() {
             />
           )}
         </Stack.Screen>
-        
+        <Stack.Screen name="Login" component={LoginScreen} />
+        <Stack.Screen name="CreateAccount" component={CreateAccountScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

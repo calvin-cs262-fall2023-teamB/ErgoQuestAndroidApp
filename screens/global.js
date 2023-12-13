@@ -10,5 +10,5 @@ global.presets = [
         {"id": 2, "name": "other actuator", "percent": 50}
     ]}
 ];
-global.moves = [{"id": 1, "name": "legrest", "percent": 0}, {"id": 2, "name": "back", "percent": 0}, {"id": 3, "name": "seat", "percent": 0}];
+global.moves = [{"id": 1, "name": "back", "percent": 0}, {"id": 2, "name": "seat", "percent": 0}, {"id": 3, "name": "legrest", "percent": 0}];
 global.times = [];

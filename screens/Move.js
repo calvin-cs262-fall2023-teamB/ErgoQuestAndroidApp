@@ -34,6 +34,10 @@ export default function MoveScreen() {
   const [updater, setUpdater] = useState(0); // for updating flat list on create
   const [isMenuExpanded, setIsMenuExpanded] = useState(false);
 
+  // Introduce flags to control modal visibility
+  const [showNameModal, setShowNameModal] = useState(false);
+  const [showValueModal, setShowValueModal] = useState(false);
+
   useEffect(() => {
     return () => {
       if (intervalId) {
@@ -87,24 +91,26 @@ export default function MoveScreen() {
       setMoves(global.moves);
       // update actuator names in presets
       for (let i = 0; i < global.presets.length; i++) {
-        if (global.presets[i].actuatorValues[selectedMoveIndex].id = global.moves[selectedMoveIndex].id) {
+        if (global.presets[i].actuatorValues[selectedMoveIndex].id === global.moves[selectedMoveIndex].id) {
           global.presets[i].actuatorValues[selectedMoveIndex].name = inputName;
         } else {
           for (let j = 0; j < global.presets[i].actuatorValues.length; j++) {
-            if (global.presets[i].actuatorValues[j].id = global.moves[selectedMoveIndex].id) {
+            if (global.presets[i].actuatorValues[j].id === global.moves[selectedMoveIndex].id) {
               global.presets[i].actuatorValues[j].name = inputName;
               break;
             }
           }
         }
       }
-      // TODO: sync new preset settings to database
+      // TODO: sync new preset settings to the database
       setInputName('');
       setNameModalVisible(false);
     } else {
       Alert.alert('Error', 'Name cannot be empty!');
     }
-  };
+    // Set the flag to hide the modal
+    setNameModalVisible(false);
+  };  
 
 
   const handlePercentChange = () => {
@@ -113,35 +119,19 @@ export default function MoveScreen() {
       global.moves[selectedMoveIndex].percent = newPercent;
       setMoves(global.moves);
       setInputPercent('');
-      setValueModalVisible(false);
     } else {
       Alert.alert('Error', 'Percentage should be between 0 and 100!');
     }
-  };
+    // Set the flag to hide the modal
+    setShowValueModal(false);
+  };  
+  
 
   const toggleMenuSize = () => {
     setIsMenuExpanded(!isMenuExpanded); // This toggles the expanded state
   };
 
-  const OptionModal = ({ isVisible, onClose, options }) => (
-    <Modal isVisible={isVisible}>
-      <View style={styles.modalContent}>
-        {options.map(option => (
-          <TouchableOpacity key={option.label} onPress={option.action}>
-            {/* Apply the style conditionally based on isMenuExpanded */}
-            <Text style={isMenuExpanded ? styles.optionTextExpanded : styles.optionText}>
-              {option.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-        <TouchableOpacity onPress={onClose}>
-          <Text style={isMenuExpanded ? styles.optionTextExpanded : styles.optionText}>
-            Close
-          </Text>
-        </TouchableOpacity>
-      </View>
-    </Modal>
-  );
+  
 
   const handleMenuOption = (option) => {
     if (option === 'name') {
@@ -166,28 +156,28 @@ export default function MoveScreen() {
         setValueModalVisible(true);
       }
     },
-    // Add the "Remove Move" option
-    {
-      label: 'Remove Move',
-      action: () => {
-        Alert.alert(
-          'Remove Move',
-          'Are you sure you want to remove this move?',
-          [
-            {
-              text: 'Cancel',
-              style: 'cancel',
-            },
-            {
-              text: 'OK',
-              onPress: () => removeMove(selectedMoveIndex),
-            },
-          ],
-          { cancelable: false }
-        );
-        setMenuVisible(false); // Close the options modal
-      }
-    }
+    // // Add the "Remove Move" option
+    // {
+    //   label: 'Remove Move',
+    //   action: () => {
+    //     Alert.alert(
+    //       'Remove Move',
+    //       'Are you sure you want to remove this move?',
+    //       [
+    //         {
+    //           text: 'Cancel',
+    //           style: 'cancel',
+    //         },
+    //         {
+    //           text: 'OK',
+    //           onPress: () => removeMove(selectedMoveIndex),
+    //         },
+    //       ],
+    //       { cancelable: false }
+    //     );
+    //     setMenuVisible(false); // Close the options modal
+    //   }
+    // }
   ];
 
   const addNewMove = () => {
@@ -224,28 +214,55 @@ export default function MoveScreen() {
 
   const renderMove = ({ item, index }) => (
     <View style={styles.frame}>
-      <View style={styles.header}>
-        <Text style={styles.percentText}>{item.percent}%</Text>
-        <Text style={styles.nameText}>{item.name}</Text>
-        <TouchableOpacity onPress={() => {
-          setSelectedMoveIndex(index); // Update the selected move index
-          setMenuVisible(!menuVisible);
-        }}>
-          <Icon name="options" size={48} color="black" />
-        </TouchableOpacity>
-      </View>
+      {/* TouchableOpacity wraps the entire upper part */}
+      <View style={styles.frame}>
+  {/* The header section remains the same */}
+  <View style={styles.header}>
+    <Text style={styles.percentText}>{item.percent}%</Text>
+    <Text style={styles.nameText}>{item.name}</Text>
+  </View>
+
+  {/* The buttons section with the option buttons */}
+  <View style={styles.buttons}>
+
+    {/* Add the option buttons directly in the move item */}
+    <TouchableOpacity
+      style={styles.optionButton}
+      onPress={() => {
+        setShowNameModal(true);
+        setSelectedMoveIndex(index);
+      }}
+    >
+      <Text style={styles.optionButtonText}>Change Name</Text>
+    </TouchableOpacity>
+
+    <TouchableOpacity
+      style={styles.optionButton}
+      onPress={() => {
+        setShowValueModal(true);
+        setSelectedMoveIndex(index);
+      }}
+    >
+      <Text style={styles.optionButtonText}>Change Value</Text>
+    </TouchableOpacity>
+
+    {/* You can add more buttons as needed */}
+  </View>
+</View>
+
+  
       <View style={styles.buttons}>
         <TouchableOpacity
           style={styles.button}
-          onPressIn={() => startDecreasing(index)}  // Pass the index here
+          onPressIn={() => startDecreasing(index)}
           onPressOut={stopChange}
         >
           <Text style={styles.buttonText}>-</Text>
         </TouchableOpacity>
-
+  
         <TouchableOpacity
           style={styles.button}
-          onPressIn={() => startIncreasing(index)}  // Pass the index here
+          onPressIn={() => startIncreasing(index)}
           onPressOut={stopChange}
         >
           <Text style={styles.buttonText}>+</Text>
@@ -260,11 +277,11 @@ export default function MoveScreen() {
     );
   }
 
-  const removeMove = (index) => {
-    global.moves = (global.moves.filter((_, i) => i !== index));
-    setMoves(global.moves);
-    setMenuVisible(false); // Close the menu after removing the move
-  };
+  // const removeMove = (index) => {
+  //   global.moves = (global.moves.filter((_, i) => i !== index));
+  //   setMoves(global.moves);
+  //   setMenuVisible(false); // Close the menu after removing the move
+  // };
 
 
 
@@ -280,20 +297,16 @@ export default function MoveScreen() {
         keyExtractor={(item, index) => index.toString()}
         ItemSeparatorComponent={Separator} />
 
-      <TouchableOpacity
+      {/* <TouchableOpacity
         style={styles.addMoveButton}
         onPress={addNewMove}
       >
         <Text style={styles.addMoveButtonText}>ADD NEW MOVE</Text>
-      </TouchableOpacity>
+      </TouchableOpacity> */}
 
-      <OptionModal
-        isVisible={menuVisible}
-        onClose={() => setMenuVisible(false)}
-        options={menuOptions}
-      />
+      
 
-      <Modal isVisible={isNameModalVisible}>
+      <Modal isVisible={showNameModal}>
         <View style={styles.modalContent}>
           <TextInput
             style={styles.input}
@@ -314,7 +327,7 @@ export default function MoveScreen() {
   </View>
 </Modal>
 
-<Modal isVisible={isValueModalVisible}>
+<Modal isVisible={showValueModal}>
   <View style={styles.modalContent}>
     <TextInput
       style={styles.input}
@@ -345,12 +358,12 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',  // changed from 'flex-start'
     alignItems: 'center',
-    paddingTop: 30,
+    paddingTop: 100,
     backgroundColor: '#43B2D1',
     maxWidth: "100%",
   },
   frame: {
-    marginLeft: 75,
+    marginLeft: 34,
     marginTop: 30,
     width: '80%',
     padding: 10,
@@ -374,7 +387,7 @@ const styles = StyleSheet.create({
   buttons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    width: '70%', // adjusted for bigger buttons
+    width: '80%', // adjusted for bigger buttons
     marginBottom: 20,
   },
   button: {
@@ -397,7 +410,7 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     backgroundColor: 'white',
-    padding: 20,
+    padding: 75,
     borderRadius: 10,
     alignItems: 'center',
   },
@@ -428,13 +441,28 @@ const styles = StyleSheet.create({
   },
 
   optionText: {
-    fontSize: 18, 
+    fontSize: 26,
+    marginVertical: 8, 
   },
 
   optionTextExpanded: {
-    fontSize: 24, 
+    fontSize: 26, 
+    marginVertical: 10,
   },
 
-
+  optionButton: {
+    width: 120,
+    height: 60,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'black', // Choose a color for the option buttons
+    borderRadius: 5,
+    marginTop: 10, // Adjust as needed
+  },
+  optionButtonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: 'white',
+  },
 
 });

@@ -141,6 +141,7 @@ export default function App() {
   const [id, setID] = useState(''); // State to store the ID value
   const tradeRef = useRef(0);
 
+  
   useEffect(() => {
     const intervalId = setInterval(() => {
       setID(tradeRef.current);
@@ -152,6 +153,7 @@ export default function App() {
     // Cleanup the interval on component unmount
     return () => clearInterval(intervalId);
   });
+  
 
   const setLocation = (text) => {
     // Update the state with the input value

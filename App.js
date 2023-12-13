@@ -59,11 +59,11 @@ const  HomeScreen = ({ navigation, changeLocation, callMove }) => {
     <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, marginTop: -15 }}>
         <TouchableOpacity onPress={toggleHelpVisible}>
-          <Icon name="ios-help-circle" size={36} color="black" />
+          <Icon name="ios-help-circle" size={48} color="black" />
         </TouchableOpacity>
         <Image source={require('./assets/StolenLogo_ErgoQuest.png')} />
         <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
-          <Icon name="ios-cog" size={36} color="black" />
+          <Icon name="ios-cog" size={48} color="black" />
         </TouchableOpacity>
       </View>
       <Tab.Navigator tabBarPosition="bottom">
@@ -144,10 +144,12 @@ export default function App() {
   
   useEffect(() => {
     const intervalId = setInterval(() => {
-      setID(tradeRef.current);
-      setLocation(global.moves[tradeRef.current].percent);
+      if(global.moveReady==true){
+        setID(tradeRef.current);
+        setLocation(global.moves[tradeRef.current].percent);
 
-      tradeRef.current = (tradeRef.current + 1) % global.moves.length;
+        tradeRef.current = (tradeRef.current + 1) % global.moves.length;
+      }
     }, 250);
 
     // Cleanup the interval on component unmount

@@ -62,6 +62,7 @@ export default function PresetsScreen({ props, navigation }) {
                     })
                 }
                 global.moves = moveArray;
+                global.moveReady = true;
                 // highlight active?
                 return;
             }
@@ -228,7 +229,7 @@ export default function PresetsScreen({ props, navigation }) {
                   style={[styles.presetButton, styles.presetButtonRight]}
                 >
                   <View style={styles.iconWrapper}>
-                    <Icon name="more" size={24} color="black" />
+                    <Icon name="more" size={36} color="black" />
                   </View>
                 </Pressable>
               </View>

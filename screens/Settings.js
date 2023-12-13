@@ -46,7 +46,7 @@ const SettingsModal = ({ connect, disconnect, connected }) => {
     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, marginTop: 20, width: '100%' }}>
       <TouchableOpacity onPress={handleRemovePage} style={{ position: 'absolute', top: 20, right: 20 }}>
         <View style={{ backgroundColor: 'red', borderRadius: 20, padding: 10 }}>
-          <Icon name="ios-close" size={30} color="white" />
+          <Icon name="ios-close" size={48} color="white" />
         </View>
       </TouchableOpacity>
       <View>

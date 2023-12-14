@@ -294,12 +294,12 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',  // changed from 'flex-start'
     alignItems: 'center',
-    paddingTop: 100,
+    paddingTop: 30,
     backgroundColor: '#43B2D1',
     maxWidth: "100%",
   },
   frame: {
-    marginLeft: 34,
+    marginLeft: 75,
     marginTop: 30,
     width: '80%',
     padding: 10,
@@ -323,7 +323,7 @@ const styles = StyleSheet.create({
   buttons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    width: '80%', // adjusted for bigger buttons
+    width: '70%', // adjusted for bigger buttons
     marginBottom: 20,
   },
   button: {
@@ -357,9 +357,9 @@ const styles = StyleSheet.create({
   },
 
   addMoveButton: {
-    marginTop: 15,  // pushes the button to the bottom of the available space
-    marginBottom: 25,   // adds some space at the bottom for aesthetics
-    width: '88%',
+    marginTop: 'auto',  // pushes the button to the bottom of the available space
+    marginBottom: 40,   // adds some space at the bottom for aesthetics
+    width: '70%',
     height: 60,
     justifyContent: 'center',
     alignItems: 'center',
@@ -368,18 +368,17 @@ const styles = StyleSheet.create({
   },
 
   addMoveButtonText: {
-    alignContent: "center",
-    textAlign: "center",
-    justifyContent: "center",
-    fontSize: 24,
-    padding: "5%",
-    width: "100%",
-    height: "100%",
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: 'black',
+
+
+
   },
 
   optionText: {
-    fontSize: 26,
-    marginVertical: 8, 
+    fontSize: 26, 
+    marginVertical: 8,
   },
 
   optionTextExpanded: {

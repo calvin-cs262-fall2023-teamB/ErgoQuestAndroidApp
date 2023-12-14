@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Image, TouchableOpacity, SafeAreaView, Dimensions, StyleSheet, Button } from 'react-native';
+import { View, Text, TextInput, Image, TouchableOpacity, SafeAreaView, Dimensions, StyleSheet, Button } from 'react-native';
 import Icon from 'react-native-ionicons';
 import Modal from 'react-native-modal';
 import { globalStyles } from '../styles/global';
@@ -14,6 +14,7 @@ const SettingsModal = ({ connect, disconnect, connected }) => {
 
   //const userData = route?.params?.userData || null;
   const navigation = useNavigation(); // Get the navigation object
+  const [actuatorCount, setActuatorCount] = useState(1);
 
   const showAccountInfo = () => {
     if (global.userData) {
@@ -40,6 +41,41 @@ const SettingsModal = ({ connect, disconnect, connected }) => {
     //setIsSettingsVisible(false); // Close the modal
     navigation.navigate('Login'); // Navigate
   };
+
+  const confirmActuatorCount = () => {
+    if (actuatorCount){
+      if (actuatorCount >= 1 && actuatorCount <= 7){
+        const curr = global.moves.length;
+        let newMoves = [];
+        // set moves to proper length
+        for (let i = 0; i < actuatorCount; i++) {
+          if (i < curr){
+            newMoves.push(global.moves[i])
+          } else {
+            newMoves.push({"id": (i + 1), "name": ("Actuator " + (i + 1) + ""), "percent": 0});
+          }
+        }
+        global.moves = newMoves;
+        // edit presets to right length
+        for (let i = 0; i < global.presets.length; i++){
+          let newValues = [];
+          for (let j = 0; j < actuatorCount; j++){
+            if (j < curr){
+              newValues.push(global.presets[i].actuatorValues[j])
+            } else {
+              newValues.push({"id": (j + 1), "name": ("Actuator " + (j + 1) + ""), "percent": 0});
+            }
+          }
+          global.presets[i].actuatorValues = newValues;
+        }
+        alert("Success!");
+      } else {
+        alert("Error, you must have between 1 and 7 actuators.");
+      }
+    } else {
+      alert("Error, cannot leave field blank.");
+    }
+  }
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: 'white', alignItems: 'center' }}>
@@ -105,6 +141,19 @@ const SettingsModal = ({ connect, disconnect, connected }) => {
         <Text style={{ fontSize: 24, color: 'white', fontWeight: 'bold', marginRight: 8 }}>Log In</Text>
       </TouchableOpacity>
     </View>
+
+    <View style={{ justifyContent: 'center', alignItems: 'center' }}>
+        <TextInput
+            keyboardType = 'numeric'
+            style={{ fontSize: 24, color: 'black', fontWeight: 'bold', borderRadius: 50, borderWidth: 2, borderColor: 'black', textAlign: "center" }}
+            value={actuatorCount}
+            onChangeText={setActuatorCount}
+            placeholder="Actuators (1-7)"
+          />
+        <TouchableOpacity onPress={confirmActuatorCount} style={{ backgroundColor: '#43B2D1', borderRadius: 20, padding: 10 }}>
+          <Text style={{ fontSize: 24, color: 'white', fontWeight: 'bold' }}>Set number of actuators</Text>
+        </TouchableOpacity>
+      </View>
   </SafeAreaView>
   );
 }

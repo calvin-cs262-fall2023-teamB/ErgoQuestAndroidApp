@@ -32,8 +32,8 @@ bool moveActuators[] = {false, false, false};
 unsigned long startTimes[] = {0, 0, 0};
 const int NUM_ACTUATORS = 3;
 const unsigned long moveInterval = 10; // Interval between position updates in milliseconds
-const float maxExtent = 170; // Maximum extent of the actuator in mm
-const float maxSpeed = 9.0;    // Maximum speed of the actuator in mm/s
+const float maxExtent[] = {711.2, 170, 203.2}; // Maximum extent of the actuator in mm
+const float maxSpeed[] = {40.64, 9.0, 11.0};    // Maximum speed of the actuator in mm/s
 
 class MyServerCallbacks : public BLEServerCallbacks
 {
@@ -85,7 +85,7 @@ class CharacteristicsCallbacks : public BLECharacteristicCallbacks
       location_characteristic->notify();
       
       int actuatorIndex = id.toInt();
-      targetPositions[actuatorIndex] = (location.toInt() / 100.0) * maxExtent;
+      targetPositions[actuatorIndex] = (location.toInt() / 100.0) * maxExtent[actuatorIndex];
       moveActuators[actuatorIndex] = true;
       startTimes[actuatorIndex] = millis();  // Record start time for the actuator
     }
@@ -152,8 +152,14 @@ void setup()
     digitalWrite(retractPins[i], HIGH);
   }
 
-  delay((maxExtent / maxSpeed) * 1000);
+  delay((maxExtent[1] / maxSpeed[1]) * 1000);
   Serial.println("Actuators are zeroed.");
+
+  for (int i = 0; i < NUM_ACTUATORS; ++i)
+  {
+    digitalWrite(extendPins[i], LOW);
+    digitalWrite(retractPins[i], LOW);
+  }
 }
 
 void moveActuator(int actuatorIndex) {
@@ -161,7 +167,7 @@ void moveActuator(int actuatorIndex) {
 
   // Calculate the time needed to reach the target position
   float distanceToMove = targetPositions[actuatorIndex] - currentPositions[actuatorIndex];
-  float moveDistance = maxSpeed * moveInterval / 1000.0;
+  float moveDistance = maxSpeed[actuatorIndex] * moveInterval / 1000.0;
 
   if (abs(distanceToMove) > moveDistance) {
     if (distanceToMove > 0) {

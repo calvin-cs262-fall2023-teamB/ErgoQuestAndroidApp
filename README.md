@@ -1,4 +1,9 @@
-# React Native Arduino BLE Example
+# ErgoQuest Android App
+This repo was originally created by forking a repo I found online that connects a React Native app to an ESP32 over BLE. The ReadMe for the original repo can be seen below.
+
+This repo contains the code for the ErgoQuest chair control app, built specifically for Android. It includes all Bluetooth functionality, as well as the code for the microcontroller, which is in the Arduino folder.
+
+# React Native Arduino BLE Example (Original ReadMe)
 
 An example project on how to communicate between an esp32 and a React Native app over Bluetooth low energy
 A video showing the app can be found [here](https://www.youtube.com/watch?v=erWibryA_tE)
